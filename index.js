@@ -4,65 +4,65 @@ const cheerio = require('cheerio');
 
 // Télécharger une page HTML
 const getHtml = (url) => {
-  return rp(url)
-  .then(function (htmlString) {
-    // console.log(htmlString);
-    return htmlString;
-  })
-  .catch(function (err) {
-    console.error("RP ERROR:", err)
-  });
+    return rp(url)
+        .then(function (htmlString) {
+            // console.log(htmlString);
+            return htmlString;
+        })
+        .catch(function (err) {
+            console.error("RP ERROR:", err)
+        });
 }
 
 // Télécharger un pdf
 const getPdf = (url) => {
-  return rp({
-    url: url,
-    encoding: null
-  }).then(function (pdf) {
-    // console.log("PDF download");
-    return pdf;
-  }).catch(function (err) {
-    console.error("RP ERROR:", err)
-  });
+    return rp({
+        url: url,
+        encoding: null
+    }).then(function (pdf) {
+        // console.log("PDF download");
+        return pdf;
+    }).catch(function (err) {
+        console.error("RP ERROR:", err)
+    });
 }
 
 // Récupérer la liste des formations
 const getFormations = () => {
-  return getHtml('https://www.insa-lyon.fr/fr/formation/diplomes/ING').then((html) => {
-    const $ = cheerio.load(html);
-    // Pour obtenir le selecteur, j'explore la page avec mon navigateur
-    const urls = $('.diplome table a').map(function() {
-      return $(this).attr('href');
-    }).get();
-    return urls; // Ne pas oublier de retourner un résultat
-  })
+    return getHtml('https://www.insa-lyon.fr/fr/formation/diplomes/ING').then((html) => {
+        const $ = cheerio.load(html);
+        // Pour obtenir le selecteur, j'explore la page avec mon navigateur
+        const urls = $('.diplome table a').map(function () {
+            return $(this).attr('href');
+        }).get();
+        return urls; // Ne pas oublier de retourner un résultat
+    })
 }
 
 const getPdfUrlsParcours = (url) => {
-  return getHtml(url).then((html) => {
-    const $ = cheerio.load(html);
-    const urls = $('#block-system-main .content-offre-formations table a').map(function() {
-      return $(this).attr('href');
-    }).get();
-    return urls; // Ne pas oublier de retourner un résultat
-  })
+    return getHtml(url).then((html) => {
+        const $ = cheerio.load(html);
+        const urls = $('#block-system-main .content-offre-formations table a').map(function () {
+            return $(this).attr('href');
+        }).get();
+        return urls; // Ne pas oublier de retourner un résultat
+    })
 }
 
 // Renvoie plus de 3000 urls
 const getAllPdfUrl = () => {
-  return getFormations().then((urls) => {
-    // Pour chaque url de formation, on récupère la liste des urls de pdf.
-    // Ici, je fais toutes les requetes en parallèle
-    // ce qui peut poser des problèmes si la machine n'a pas assez de mémoire.
-    return Promise.all(urls.map((url) => {
-      // url relative : /fr/formation/parcours/729/5/1
-      return getPdfUrlsParcours(`https://www.insa-lyon.fr${url}`)
-    })).then((urls) => {
-      // urls de la forme [[...], [...], [...]]
-      return [].concat.apply([], urls); // Applatissement du tableau
+    return getFormations().then((urls) => {
+        // Pour chaque url de formation, on récupère la liste des urls de pdf.
+        // Ici, je fais toutes les requetes en parallèle
+        // ce qui peut poser des problèmes si la machine n'a pas assez de mémoire.
+        return Promise.all(urls.map((url) => {
+            // url relative : /fr/formation/parcours/729/5/1
+            return getPdfUrlsParcours(`https://www.insa-lyon.fr${url}`)
+        })).then((urls) => {
+            // urls de la forme [[...], [...], [...]]
+            return [].concat.apply([], urls); // Applatissement du tableau
+        })
     })
-  })
 }
 
 // Lance le serveur Tika
@@ -71,58 +71,58 @@ const ts = new TikaServer();
 const db = {}
 
 ts.on("debug", (msg) => {
-  // console.log(`DEBUG: ${msg}`)
+    // console.log(`DEBUG: ${msg}`)
 })
 
 // Lance le serveur tika
 ts.start().then(() => {
-  return getAllPdfUrl().then((listeUrlPdfs) => {
-    // Pour chaque url ...
-    return listeUrlPdfs.reduce((p, url) => {
-      // Le reduce sert ici à éviter de faire toutes les requetes en même temps.
-      // Il y a plus de 3000 pdfs...
-      return p.then(() => {
-        // Extraction du texte.
-        // On vérifie qu'il y a bien une url
-        if (url) {
-          return getPdf(url).then((pdf) => {
-            // console.log("pdf", pdf);
-            if (pdf) {
-              // Et qu'il y a bien un pdf.
-              return ts.queryText(pdf).then((data) => {
-                // console.log(data)
-                const code = /CODE : ([^\n]*)/.exec(data)[1];
-                console.log("code :", code);
-                db[code] = true;
-                const ECTS = /ECTS : ([^\n]*)/.exec(data)[1];
-                console.log("ECTS :", ECTS);
-                db[ECTS] = true;
-                const Cours = /Cours : ([^\n]*)/.exec(data)[1];
-                console.log("Cours :", Cours);
-                db[Cours] = true;
-                const TD = /TD : ([^\n]*)/.exec(data)[1];
-                console.log("TD :", TD);
-                db[TD] = true;
-                const TP = /TP : ([^\n]*)/.exec(data)[1];
-                console.log("TP :", TP);
-                db[TP] = true;
-                const Projet = /Projet : ([^\n]*)/.exec(data)[1];
-                console.log("Projet :", Projet);
-                db[Projet] = true;
-              });
-            }
-          })
-        }
-      })
-    }, Promise.resolve()) // Initilise le reduce avec une promesse
-  })
+    return getAllPdfUrl().then((listeUrlPdfs) => {
+        // Pour chaque url ...
+        return listeUrlPdfs.reduce((p, url) => {
+            // Le reduce sert ici à éviter de faire toutes les requetes en même temps.
+            // Il y a plus de 3000 pdfs...
+            return p.then(() => {
+                // Extraction du texte.
+                // On vérifie qu'il y a bien une url
+                if (url) {
+                    return getPdf(url).then((pdf) => {
+                        // console.log("pdf", pdf);
+                        if (pdf) {
+                            // Et qu'il y a bien un pdf.
+                            return ts.queryText(pdf).then((data) => {
+                                // console.log(data)
+                                const code = /CODE : ([^\n]*)/.exec(data)[1];
+                                console.log("code :", code);
+                                db[code] = true;
+                                const ECTS = /ECTS : ([^\n]*)/.exec(data)[1];
+                                console.log("ECTS :", ECTS);
+                                db[ECTS] = true;
+                                const Cours = /Cours : ([^\n]*)/.exec(data)[1];
+                                console.log("Cours :", Cours);
+                                db[Cours] = true;
+                                const TD = /TD : ([^\n]*)/.exec(data)[1];
+                                console.log("TD :", TD);
+                                db[TD] = true;
+                                const TP = /TP : ([^\n]*)/.exec(data)[1];
+                                console.log("TP :", TP);
+                                db[TP] = true;
+                                const Projet = /Projet : ([^\n]*)/.exec(data)[1];
+                                console.log("Projet :", Projet);
+                                db[Projet] = true;
+                            });
+                        }
+                    })
+                }
+            })
+        }, Promise.resolve()) // Initilise le reduce avec une promesse
+    })
 }).then(() => {
-  return ts.stop()
+    return ts.stop()
 }).catch((err) => {
-  console.log(`TIKA ERROR: ${err}`, err)
-  return ts.stop()
+    console.log(`TIKA ERROR: ${err}`, err)
+    return ts.stop()
 }).then(() => {
-  console.log(JSON.stringify(db, null, 2));
+    console.log(JSON.stringify(db, null, 2));
 })
 
 // Version simple.
