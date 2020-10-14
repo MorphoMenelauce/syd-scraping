@@ -94,6 +94,21 @@ ts.start().then(() => {
                 const code = /CODE : ([^\n]*)/.exec(data)[1];
                 console.log("code :", code);
                 db[code] = true;
+                const ECTS = /ECTS : ([^\n]*)/.exec(data)[1];
+                console.log("ECTS :", ECTS);
+                db[ECTS] = true;
+                const Cours = /Cours : ([^\n]*)/.exec(data)[1];
+                console.log("Cours :", Cours);
+                db[Cours] = true;
+                const TD = /TD : ([^\n]*)/.exec(data)[1];
+                console.log("TD :", TD);
+                db[TD] = true;
+                const TP = /TP : ([^\n]*)/.exec(data)[1];
+                console.log("TP :", TP);
+                db[TP] = true;
+                const Projet = /Projet : ([^\n]*)/.exec(data)[1];
+                console.log("Projet :", Projet);
+                db[Projet] = true;
               });
             }
           })
